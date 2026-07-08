@@ -1,0 +1,40 @@
+{
+  "name": "Metrônomo para Guitarra",
+  "short_name": "Metrônomo",
+  "description": "Metrônomo com registro de progresso para guitarra",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230f172a' width='192' height='192'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='100' fill='%2360a5fa' font-family='system-ui' font-weight='bold'>♪</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%230f172a' width='512' height='512'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='280' fill='%2360a5fa' font-family='system-ui' font-weight='bold'>♪</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Praticar",
+      "short_name": "Praticar",
+      "description": "Abrir metrônomo para praticar",
+      "url": "/?mode=practice",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%2310b981' width='96' height='96'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='50' fill='%23fff' font-family='system-ui'>▶</text></svg>",
+          "sizes": "96x96",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ],
+  "categories": ["productivity", "music"]
+}
