@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metrônomo para Guitarra</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+            padding: 20px;
+            min-height: 100vh;
+            overflow-y: scroll;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 30px;
+            color: #f1f5f9;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            background-color: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #cbd5e1;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .exercise-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .exercise-header {
+            font-size: 12px;
+            font-weight: 500;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-top: 10px;
+            padding-left: 20px;
+        }
+
+        .exercise-btn {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+
+        .exercise-btn.inactive {
+            background-color: #334155;
+            color: #cbd5e1;
+        }
+
+        .exercise-btn.active {
+            background-color: #3b82f6;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .exercise-btn.sub {
+            margin-left: 20px;
+        }
+
+        .bpm-display {
+            text-align: center;
+            margin-bottom: 25px;
+            display: flex;
+            gap: 60px;
+            align-items: flex-start;
+            justify-content: center;
+            position: relative;
+        }
+
+        .bpm-main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .bpm-label {
+            font-size: 12px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .bpm-value {
+            font-size: 64px;
+            font-weight: bold;
+            color: #60a5fa;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .timer-inline {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .timer-inline .timer-time {
+            font-size: 36px;
+            color: #f59e0b;
+        }
+
+        .timer-inline .timer-label {
+            font-size: 11px;
+            letter-spacing: 2px;
+        }
+
+        .beat-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .beat-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: #d1d5db;
+            transition: background-color 0.1s ease;
+        }
+
+        .beat-dot.active {
+            background-color: #ef4444;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .percent-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .percent-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .label {
+            font-size: 12px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        input[type="number"] {
+            padding: 8px 12px;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-size: 14px;
+            font-weight: 600;
+            width: 70px;
+            text-align: center;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 16px;
+            background-color: #475569;
+            color: #e2e8f0;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .btn:active {
+            opacity: 0.8;
+        }
+
+        .play-btn {
+            width: 100%;
+            padding: 16px;
+            background-color: #10b981;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .play-btn:active {
+            opacity: 0.8;
+        }
+
+        .play-btn.playing {
+            background-color: #f59e0b;
+        }
+
+        .info {
+            background-color: #1e293b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .info-text {
+            font-size: 13px;
+            color: #94a3b8;
+            margin: 0;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #334155;
+        }
+
+        .tab-btn {
+            padding: 10px 16px;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+
+        .tab-btn.active {
+            color: #60a5fa;
+            border-bottom-color: #60a5fa;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #historyChart {
+            max-height: 300px;
+            margin-bottom: 20px;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background-color: #0f172a;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .history-date {
+            color: #94a3b8;
+        }
+
+        .history-bpm {
+            font-weight: 600;
+            color: #60a5fa;
+            font-size: 16px;
+        }
+
+        .add-exercise-section {
+            background-color: #1e293b;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .form-group input,
+        .form-group input[type="checkbox"] {
+            padding: 10px 12px;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-size: 14px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .form-row > div {
+            flex: 1;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .add-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #10b981;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        /* Melhorar scroll da lista de exercícios */
+        #exercisesList {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .exercise-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background-color: #0f172a;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .exercise-item:active {
+            opacity: 0.8;
+        }
+
+        .exercise-item.active {
+            background-color: #1e3a5f;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .exercise-info {
+            flex: 1;
+        }
+
+        .exercise-title {
+            font-weight: 600;
+            color: #e2e8f0;
+            font-size: 14px;
+        }
+
+        .exercise-meta {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .exercise-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .delete-btn {
+            padding: 6px 10px;
+            background-color: #7f1d1d;
+            color: #fee2e2;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .delete-btn:active {
+            opacity: 0.8;
+        }
+
+        .empty-message {
+            color: #94a3b8;
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        .timer-section {
+            background-color: #0f172a;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            border: 1px solid #334155;
+        }
+
+        .timer-display {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .timer-time {
+            font-size: 48px;
+            font-weight: bold;
+            color: #fbbf24;
+            font-variant-numeric: tabular-nums;
+            font-family: 'Courier New', monospace;
+        }
+
+        .timer-label {
+            font-size: 11px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .timer-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .timer-btn.start {
+            background-color: #f59e0b;
+            color: #fff;
+        }
+
+        .timer-btn.start:active {
+            opacity: 0.8;
+        }
+
+        .timer-btn.pause {
+            background-color: #6366f1;
+            color: #fff;
+        }
+
+        .timer-btn.pause:active {
+            opacity: 0.8;
+        }
+
+        .timer-btn.reset {
+            background-color: #6b7280;
+            color: #fff;
+        }
+
+        .timer-btn.reset:active {
+            opacity: 0.8;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+
+            h1 {
+                font-size: 24px;
+                margin-bottom: 20px;
+            }
+
+            .section {
+                padding: 16px;
+                margin-bottom: 20px;
+            }
+
+            .bpm-value {
+                font-size: 56px;
+            }
+
+            .btn, .play-btn {
+                font-size: 16px;
+                padding: 12px 14px;
+            }
+
+            .control-group {
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎸 Metrônomo para Guitarra</h1>
+
+        <!-- Gerenciar Exercícios -->
+        <div class="add-exercise-section">
+            <div class="section-title">Adicionar novo exercício</div>
+            
+            <div class="form-group">
+                <label>Título do exercício</label>
+                <input type="text" id="exerciseTitleInput" placeholder="Ex: Semicolcheia em E" maxlength="50">
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="hasMetaCheckbox" onchange="app.toggleMetaInput()">
+                <label for="hasMetaCheckbox" style="margin: 0;">Definir meta de BPM?</label>
+            </div>
+
+            <div class="form-group" id="metaInputGroup" style="display: none;">
+                <label>Meta de BPM</label>
+                <input type="number" id="exerciseMetaInput" min="20" max="300" placeholder="Ex: 140">
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="trackTimeCheckbox">
+                <label for="trackTimeCheckbox" style="margin: 0;">Armazenar tempo de prática?</label>
+            </div>
+
+            <button class="add-btn" onclick="app.addExercise()">+ Adicionar Exercício</button>
+        </div>
+
+        <!-- Lista de Exercícios -->
+        <div class="section">
+            <div class="section-title">Seus exercícios</div>
+            <div id="exercisesList"></div>
+        </div>
+
+        <!-- Abas -->
+        <div style="margin-bottom: 20px;">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="app.switchTab('metronome')">🎵 Metrônomo</button>
+                <button class="tab-btn" onclick="app.switchTab('history')">📊 Histórico</button>
+            </div>
+        </div>
+
+        <!-- Display BPM e Controles -->
+        <div id="metronome" class="tab-content active">
+            <div class="section" id="metronomeSection">
+            <div class="bpm-display">
+                <div class="bpm-main">
+                    <div class="bpm-label">BPM</div>
+                    <div class="bpm-value" id="bpmValue">60</div>
+                    <!-- Indicador Visual de Beat -->
+                    <div class="beat-indicator" id="beatIndicator">
+                        <div class="beat-dot"></div>
+                        <div class="beat-dot"></div>
+                        <div class="beat-dot"></div>
+                        <div class="beat-dot"></div>
+                    </div>
+                </div>
+
+                <!-- Cronômetro na Lateral -->
+                <div class="timer-inline">
+                    <div class="timer-label">TEMPO</div>
+                    <div class="timer-time" id="timerDisplay">00:00</div>
+                    <button class="timer-btn start" id="timerStartBtn" onclick="app.toggleTimer()" style="flex: 0; width: 40px; height: 40px; padding: 0; font-size: 16px;">▶</button>
+                </div>
+            </div>
+
+            <!-- Entrada Manual de BPM -->
+            <div style="margin-bottom: 15px;">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label class="label">Inserir BPM</label>
+                    <input type="number" id="manualBpmInput" min="20" max="300" value="60" onchange="app.setManualBpm()" style="padding: 10px 12px; border: 1px solid #475569; border-radius: 6px; background-color: #0f172a; color: #e2e8f0; font-size: 14px; font-weight: 600; text-align: center;">
+                </div>
+            </div>
+
+            <!-- Controles de BPM Absoluto -->
+            <div class="control-group">
+                <button class="btn" onclick="app.updateBpm(-1)">− 1 BPM</button>
+                <button class="btn" onclick="app.updateBpm(1)">+ 1 BPM</button>
+            </div>
+
+            <!-- Controles de BPM Percentual -->
+            <div class="percent-group">
+                <div class="percent-input-group">
+                    <label class="label">Percentual (%)</label>
+                    <input type="number" id="percentValue" min="1" max="50" value="5" onchange="app.updatePercentDisplay()">
+                </div>
+                <button class="btn" onclick="app.updateBpmPercent(true)">+ <span id="percentDisplay">5</span>%</button>
+                <button class="btn" onclick="app.updateBpmPercent(false)">− <span id="percentDisplay2">5</span>%</button>
+            </div>
+
+            <!-- Play/Pause -->
+            <button class="play-btn" id="playBtn" onclick="app.togglePlay()">▶ TOCAR</button>
+
+            <!-- Botão Salvar -->
+            <button class="btn" style="width: 100%; margin-top: 10px; background-color: #06b6d4;" onclick="app.saveBpm()">💾 SALVAR BPM</button>
+            </div>
+        </div>
+
+        <!-- Tab de Histórico -->
+        <div id="history" class="tab-content">
+            <div class="section">
+                <h3 style="color: #cbd5e1; font-size: 13px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px;">📈 Progressão de BPM</h3>
+                <canvas id="historyChart"></canvas>
+                
+                <div id="timeHistoryChartSection" style="margin-top: 30px; display: none;">
+                    <h3 style="color: #cbd5e1; font-size: 13px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px;">⏱️ Tempo de Prática</h3>
+                    <canvas id="timeHistoryChart"></canvas>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <h3 style="color: #cbd5e1; font-size: 14px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Registros de <span id="historyExerciseName">exercício</span></h3>
+                    <div class="history-list" id="historyList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info -->
+        <div class="info">
+            <p class="info-text">💡 Defina o BPM e clique em SALVAR para manter a velocidade neste exercício</p>
+        </div>
+    </div>
+
+    <script>
+        const app = {
+            exercises: [],
+
+            bpms: {},
+            tempBpm: 60,
+            history: {},
+            timeHistory: {},
+            selectedExercise: null,
+            isPlaying: false,
+            percentValue: 5,
+            synth: null,
+            beatCount: 0,
+            transportStarted: false,
+            transportLoop: null,
+            chartInstance: null,
+            timeChartInstance: null,
+            timerSeconds: 0,
+            timerInterval: null,
+            timerRunning: false,
+
+            init() {
+                this.loadBpms();
+                this.renderExercises();
+                this.initTone();
+                this.updatePercentDisplay();
+            },
+
+            initTone() {
+                // Aumentar volume master
+                Tone.Destination.volume.value = 0;
+                
+                this.synth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: 'sine' },
+                    envelope: {
+                        attack: 0.005,
+                        decay: 0.08,
+                        sustain: 0,
+                        release: 0.05,
+                    },
+                }).toDestination();
+                
+                this.synth.volume.value = 0; // 0 dB = volume máximo
+            },
+
+            loadBpms() {
+                // Carregar exercícios customizados
+                const savedExercises = localStorage.getItem('guitarMetronomeExercises');
+                if (savedExercises) {
+                    this.exercises = JSON.parse(savedExercises);
+                }
+                
+                // Carregar BPMs
+                const saved = localStorage.getItem('guitarMetronomeBPMs');
+                if (saved) {
+                    this.bpms = JSON.parse(saved);
+                } else {
+                    this.bpms = {};
+                }
+                
+                // Carregar histórico
+                const savedHistory = localStorage.getItem('guitarMetronomeHistory');
+                if (savedHistory) {
+                    this.history = JSON.parse(savedHistory);
+                } else {
+                    this.history = {};
+                }
+                
+                // Carregar histórico de tempo
+                const savedTimeHistory = localStorage.getItem('guitarMetronomeTimeHistory');
+                if (savedTimeHistory) {
+                    this.timeHistory = JSON.parse(savedTimeHistory);
+                } else {
+                    this.timeHistory = {};
+                }
+                
+                // Garantir que todos os exercícios têm entrada em timeHistory
+                this.exercises.forEach(ex => {
+                    if (!this.timeHistory[ex.id]) {
+                        this.timeHistory[ex.id] = [];
+                    }
+                });
+                
+                // Selecionar primeiro exercício se existir
+                if (this.exercises.length > 0 && !this.selectedExercise) {
+                    this.selectedExercise = this.exercises[0].id;
+                }
+                
+                this.renderExercises();
+                this.updateBpmDisplay();
+                // Sincronizar input manual com BPM atual
+                if (document.getElementById('manualBpmInput') && this.selectedExercise) {
+                    document.getElementById('manualBpmInput').value = this.currentBpm;
+                }
+            },
+
+            saveExercises() {
+                localStorage.setItem('guitarMetronomeExercises', JSON.stringify(this.exercises));
+            },
+
+            renderExercises() {
+                const listContainer = document.getElementById('exercisesList');
+                
+                if (this.exercises.length === 0) {
+                    listContainer.innerHTML = '<div class="empty-message">Nenhum exercício criado ainda. Adicione um acima!</div>';
+                    return;
+                }
+                
+                listContainer.innerHTML = this.exercises.map(ex => `
+                    <div class="exercise-item ${ex.id === this.selectedExercise ? 'active' : ''}" data-exercise-id="${ex.id}">
+                        <div class="exercise-info">
+                            <div class="exercise-title">${ex.name}</div>
+                            <div class="exercise-meta">${ex.meta ? `Meta: ${ex.meta} BPM` : 'Sem meta'}</div>
+                        </div>
+                        <div class="exercise-actions">
+                            <button class="delete-btn" data-delete-id="${ex.id}">Deletar</button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Adicionar event listeners
+                listContainer.querySelectorAll('.exercise-item').forEach(item => {
+                    const id = item.getAttribute('data-exercise-id');
+                    item.addEventListener('click', (e) => {
+                        if (!e.target.classList.contains('delete-btn')) {
+                            this.selectExercise(id);
+                        }
+                    });
+                });
+                
+                listContainer.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = btn.getAttribute('data-delete-id');
+                        this.deleteExercise(id);
+                    });
+                });
+                
+            },
+
+            addExercise() {
+                const titleInput = document.getElementById('exerciseTitleInput');
+                const metaInput = document.getElementById('exerciseMetaInput');
+                const hasMeta = document.getElementById('hasMetaCheckbox').checked;
+                const trackTime = document.getElementById('trackTimeCheckbox').checked;
+                
+                const title = titleInput.value.trim();
+                if (!title) {
+                    alert('⚠️ Digite um título para o exercício');
+                    return;
+                }
+                
+                if (hasMeta && !metaInput.value) {
+                    alert('⚠️ Digite uma meta de BPM');
+                    return;
+                }
+                
+                const id = 'ex_' + Date.now();
+                const newExercise = {
+                    id: id,
+                    name: title,
+                    meta: hasMeta ? parseInt(metaInput.value) : null,
+                    trackTime: trackTime
+                };
+                
+                this.exercises.push(newExercise);
+                this.bpms[id] = 60;
+                this.history[id] = [];
+                this.timeHistory[id] = []; // Inicializar histórico de tempo
+                
+                this.saveExercises();
+                localStorage.setItem('guitarMetronomeBPMs', JSON.stringify(this.bpms));
+                localStorage.setItem('guitarMetronomeHistory', JSON.stringify(this.history));
+                localStorage.setItem('guitarMetronomeTimeHistory', JSON.stringify(this.timeHistory));
+                
+                // Selecionar novo exercício
+                this.selectExercise(id);
+                
+                // Limpar formulário
+                titleInput.value = '';
+                metaInput.value = '';
+                document.getElementById('hasMetaCheckbox').checked = false;
+                document.getElementById('trackTimeCheckbox').checked = false;
+                this.toggleMetaInput();
+                
+                alert('✅ Exercício "' + title + '" criado!');
+            },
+
+            deleteExercise(id) {
+                const exercise = this.exercises.find(ex => ex.id === id);
+                if (!exercise) return;
+                
+                if (confirm('Tem certeza que quer deletar "' + exercise.name + '"?')) {
+                    this.exercises = this.exercises.filter(ex => ex.id !== id);
+                    
+                    // Limpar dados associados
+                    delete this.bpms[id];
+                    delete this.history[id];
+                    delete this.timeHistory[id];
+                    
+                    this.saveExercises();
+                    localStorage.setItem('guitarMetronomeBPMs', JSON.stringify(this.bpms));
+                    localStorage.setItem('guitarMetronomeHistory', JSON.stringify(this.history));
+                    localStorage.setItem('guitarMetronomeTimeHistory', JSON.stringify(this.timeHistory));
+                    
+                    // Se era o exercício selecionado, selecionar outro
+                    if (this.selectedExercise === id) {
+                        if (this.exercises.length > 0) {
+                            this.selectExercise(this.exercises[0].id);
+                        } else {
+                            this.selectedExercise = null;
+                        }
+                    }
+                    
+                    this.renderExercises();
+                    alert('✅ Exercício deletado');
+                }
+            },
+
+            toggleMetaInput() {
+                const metaGroup = document.getElementById('metaInputGroup');
+                const hasMetaCheckbox = document.getElementById('hasMetaCheckbox');
+                metaGroup.style.display = hasMetaCheckbox.checked ? 'flex' : 'none';
+            },
+
+            selectExercise(id) {
+                this.selectedExercise = id;
+                this.renderExercises();
+                this.updateBpmDisplay();
+                // Atualizar input manual para o BPM do novo exercício
+                document.getElementById('manualBpmInput').value = this.currentBpm;
+                // Resetar timer
+                this.resetTimer();
+                // Atualizar histórico se estiver visível
+                if (document.getElementById('history').classList.contains('active')) {
+                    this.updateHistoryChart();
+                    this.updateTimeHistoryChart();
+                    this.updateHistoryList();
+                }
+                if (this.isPlaying) {
+                    this.stopMetronome();
+                }
+            },
+
+            get currentBpm() {
+                if (this.selectedExercise) {
+                    return this.bpms[this.selectedExercise] || 60;
+                } else {
+                    return this.tempBpm;
+                }
+            },
+
+            updateBpmDisplay() {
+                document.getElementById('bpmValue').textContent = this.currentBpm;
+            },
+
+            updateBpm(delta) {
+                const newBpm = Math.max(20, this.currentBpm + delta);
+                
+                if (this.selectedExercise) {
+                    this.bpms[this.selectedExercise] = newBpm;
+                } else {
+                    this.tempBpm = newBpm;
+                }
+                
+                this.updateBpmDisplay();
+                // Atualizar input manual também
+                document.getElementById('manualBpmInput').value = newBpm;
+                if (this.transportStarted) {
+                    Tone.Transport.bpm.value = newBpm;
+                }
+            },
+
+            updateBpmPercent(increase) {
+                const percent = parseInt(document.getElementById('percentValue').value);
+                const factor = increase ? 1 + percent / 100 : 1 - percent / 100;
+                const newBpm = Math.max(20, Math.round(this.currentBpm * factor));
+                
+                if (this.selectedExercise) {
+                    this.bpms[this.selectedExercise] = newBpm;
+                } else {
+                    this.tempBpm = newBpm;
+                }
+                
+                this.updateBpmDisplay();
+                // Atualizar input manual também
+                document.getElementById('manualBpmInput').value = newBpm;
+                if (this.transportStarted) {
+                    Tone.Transport.bpm.value = newBpm;
+                }
+            },
+
+            updatePercentDisplay() {
+                const val = document.getElementById('percentValue').value;
+                document.getElementById('percentDisplay').textContent = val;
+                document.getElementById('percentDisplay2').textContent = val;
+            },
+
+            setManualBpm() {
+                const input = document.getElementById('manualBpmInput');
+                const bpm = Math.max(20, Math.min(300, parseInt(input.value) || 60));
+                input.value = bpm;
+                
+                if (this.selectedExercise) {
+                    this.bpms[this.selectedExercise] = bpm;
+                } else {
+                    this.tempBpm = bpm;
+                }
+                
+                this.updateBpmDisplay();
+                if (this.transportStarted) {
+                    Tone.Transport.bpm.value = bpm;
+                }
+            },
+
+            saveBpm() {
+                if (!this.selectedExercise) {
+                    alert('⚠️ Crie ou selecione um exercício para salvar o BPM!');
+                    return;
+                }
+                
+                localStorage.setItem('guitarMetronomeBPMs', JSON.stringify(this.bpms));
+                
+                // Adicionar ao histórico
+                const today = new Date().toLocaleDateString('pt-BR');
+                if (!this.history[this.selectedExercise]) {
+                    this.history[this.selectedExercise] = [];
+                }
+                
+                this.history[this.selectedExercise].push({
+                    date: today,
+                    bpm: this.currentBpm,
+                    timestamp: Date.now()
+                });
+                
+                localStorage.setItem('guitarMetronomeHistory', JSON.stringify(this.history));
+                
+                const exerciseName = this.exercises.find(ex => ex.id === this.selectedExercise).name;
+                alert('✅ BPM salvo: ' + this.currentBpm + ' para ' + exerciseName);
+                
+                // Atualizar gráfico se estiver visível
+                if (document.getElementById('history').classList.contains('active')) {
+                    this.updateHistoryChart();
+                    this.updateTimeHistoryChart();
+                }
+            },
+
+            playClick(isBeat1) {
+                if (!this.synth) return;
+                try {
+                    const freq = isBeat1 ? 1200 : 900;
+                    const duration = isBeat1 ? '32n' : '64n';
+                    this.synth.triggerAttackRelease(freq, duration, Tone.now());
+                } catch (e) {
+                    console.error('Erro ao tocar som:', e);
+                }
+            },
+
+            async startMetronome() {
+                try {
+                    // Forçar inicialização de áudio no iOS
+                    if (Tone.Destination.state === 'suspended') {
+                        await Tone.start();
+                    }
+
+                    // Garantir que o Transport está resetado
+                    Tone.Transport.cancel();
+                    Tone.Transport.stop();
+                    
+                    // Configurar BPM
+                    Tone.Transport.bpm.value = this.currentBpm;
+                    
+                    // Iniciar transporte
+                    Tone.Transport.start();
+                    this.transportStarted = true;
+
+                    // Usar loop ao invés de schedule para mais confiabilidade
+                    if (this.transportLoop) {
+                        this.transportLoop.dispose();
+                    }
+                    
+                    let beatIndex = 0;
+                    this.transportLoop = new Tone.Loop((time) => {
+                        const beatPosition = beatIndex % 4;
+                        this.synth.triggerAttackRelease(
+                            beatPosition === 0 ? 1200 : 900,
+                            beatPosition === 0 ? '100ms' : '50ms',
+                            time
+                        );
+                        this.beatCount = beatPosition;
+                        this.updateBeatIndicator();
+                        beatIndex++;
+                    }, '4n'); // Executa a cada quarter note
+                    
+                    this.transportLoop.start(0);
+                    
+                    console.log('✅ Metrônomo iniciado com BPM:', this.currentBpm);
+                } catch (err) {
+                    console.error('Erro ao iniciar metrônomo:', err);
+                    alert('Erro de áudio: ' + err.message);
+                }
+            },
+
+            updateBeatIndicator() {
+                const dots = document.querySelectorAll('.beat-dot');
+                dots.forEach((dot, idx) => {
+                    dot.classList.toggle('active', idx === this.beatCount);
+                });
+            },
+
+            async togglePlay() {
+                try {
+                    if (!this.isPlaying) {
+                        await this.startMetronome();
+                        this.isPlaying = true;
+                        document.getElementById('playBtn').textContent = '⏸ PAUSAR';
+                        document.getElementById('playBtn').classList.add('playing');
+                    } else {
+                        this.stopMetronome();
+                    }
+                } catch (err) {
+                    console.error('Erro:', err);
+                }
+            },
+
+            stopMetronome() {
+                if (this.transportLoop) {
+                    this.transportLoop.dispose();
+                    this.transportLoop = null;
+                }
+                Tone.Transport.stop();
+                Tone.Transport.cancel();
+                this.transportStarted = false;
+                this.isPlaying = false;
+                this.beatCount = 0;
+                this.updateBeatIndicator();
+                document.getElementById('playBtn').textContent = '▶ TOCAR';
+                document.getElementById('playBtn').classList.remove('playing');
+                // Parar timer quando parar o metrônomo
+                this.resetTimer();
+            },
+
+            toggleTimer() {
+                const btn = document.getElementById('timerStartBtn');
+                
+                if (this.timerRunning) {
+                    // Pausar
+                    clearInterval(this.timerInterval);
+                    this.timerRunning = false;
+                    btn.textContent = '▶';
+                    btn.classList.remove('pause');
+                    btn.classList.add('start');
+                    
+                    // Salvar tempo se exercício tem rastreamento ativado
+                    if (this.selectedExercise && this.timerSeconds > 0) {
+                        const exercise = this.exercises.find(ex => ex.id === this.selectedExercise);
+                        if (exercise && exercise.trackTime) {
+                            this.saveTimeRecord();
+                            // Atualizar gráfico se estiver visível
+                            if (document.getElementById('history').classList.contains('active')) {
+                                this.updateTimeHistoryChart();
+                            }
+                        }
+                    }
+                    
+                    // Resetar após 2 segundos para o usuário ver o tempo
+                    setTimeout(() => {
+                        this.timerSeconds = 0;
+                        this.updateTimerDisplay();
+                    }, 2000);
+                } else {
+                    // Iniciar
+                    this.timerRunning = true;
+                    btn.textContent = '⏸';
+                    btn.classList.remove('start');
+                    btn.classList.add('pause');
+                    
+                    this.timerInterval = setInterval(() => {
+                        this.timerSeconds++;
+                        this.updateTimerDisplay();
+                    }, 1000);
+                }
+            },
+
+            saveTimeRecord() {
+                const today = new Date().toLocaleDateString('pt-BR');
+                const currentBpm = this.currentBpm;
+                
+                if (!this.timeHistory[this.selectedExercise]) {
+                    this.timeHistory[this.selectedExercise] = [];
+                }
+                
+                // Verificar se já existe registro para este BPM
+                const existingIndex = this.timeHistory[this.selectedExercise].findIndex(
+                    h => h.bpm === currentBpm
+                );
+                
+                const record = {
+                    date: today,
+                    bpm: currentBpm,
+                    seconds: this.timerSeconds,
+                    timestamp: Date.now()
+                };
+                
+                if (existingIndex >= 0) {
+                    // Sobrescrever registro anterior do mesmo BPM
+                    this.timeHistory[this.selectedExercise][existingIndex] = record;
+                } else {
+                    // Adicionar novo registro
+                    this.timeHistory[this.selectedExercise].push(record);
+                }
+                
+                localStorage.setItem('guitarMetronomeTimeHistory', JSON.stringify(this.timeHistory));
+            },
+
+            resetTimer() {
+                clearInterval(this.timerInterval);
+                this.timerSeconds = 0;
+                this.timerRunning = false;
+                this.updateTimerDisplay();
+                
+                const btn = document.getElementById('timerStartBtn');
+                btn.textContent = '▶';
+                btn.classList.remove('pause');
+                btn.classList.add('start');
+            },
+
+            updateTimerDisplay() {
+                const hours = Math.floor(this.timerSeconds / 3600);
+                const minutes = Math.floor((this.timerSeconds % 3600) / 60);
+                const seconds = this.timerSeconds % 60;
+                
+                let displayText = '';
+                if (hours > 0) {
+                    displayText = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                } else {
+                    displayText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }
+                
+                document.getElementById('timerDisplay').textContent = displayText;
+            },
+
+            switchTab(tabName) {
+                // Ocultar todos os tabs
+                document.querySelectorAll('.tab-content').forEach(el => {
+                    el.classList.remove('active');
+                });
+                document.querySelectorAll('.tab-btn').forEach(el => {
+                    el.classList.remove('active');
+                });
+                
+                // Mostrar tab selecionado
+                document.getElementById(tabName).classList.add('active');
+                event.target.classList.add('active');
+                
+                // Atualizar gráfico se for tab de histórico
+                if (tabName === 'history') {
+                    this.updateHistoryChart();
+                    this.updateTimeHistoryChart();
+                    this.updateHistoryList();
+                }
+            },
+
+            updateHistoryChart() {
+                const canvasCtx = document.getElementById('historyChart');
+                if (!this.selectedExercise) {
+                    document.getElementById('historyExerciseName').textContent = 'nenhum exercício';
+                    return;
+                }
+                
+                const exerciseHistory = this.history[this.selectedExercise] || [];
+                const exercise = this.exercises.find(ex => ex.id === this.selectedExercise);
+                const exerciseName = exercise ? exercise.name : 'desconhecido';
+                
+                if (exerciseHistory.length === 0) {
+                    canvasCtx.getContext('2d').clearRect(0, 0, canvasCtx.width, canvasCtx.height);
+                    document.getElementById('historyExerciseName').textContent = exerciseName;
+                    return;
+                }
+                
+                // Ordenar histórico por timestamp
+                const sorted = [...exerciseHistory].sort((a, b) => a.timestamp - b.timestamp);
+                
+                const labels = sorted.map(h => h.date);
+                const data = sorted.map(h => h.bpm);
+                
+                // Destruir gráfico anterior se existir
+                if (this.chartInstance) {
+                    this.chartInstance.destroy();
+                }
+                
+                // Preparar datasets
+                const datasets = [{
+                    label: 'BPM',
+                    data: data,
+                    borderColor: '#60a5fa',
+                    backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#60a5fa',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                }];
+                
+                // Adicionar linha de meta se existir
+                if (exercise && exercise.meta) {
+                    datasets.push({
+                        label: 'Meta',
+                        data: Array(labels.length).fill(exercise.meta),
+                        borderColor: '#10b981',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0,
+                        pointRadius: 0,
+                    });
+                }
+                
+                this.chartInstance = new Chart(canvasCtx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: exercise && exercise.meta ? true : false,
+                                labels: {
+                                    color: '#cbd5e1',
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                min: 20,
+                                grid: {
+                                    color: '#334155'
+                                },
+                                ticks: {
+                                    color: '#94a3b8'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: '#334155'
+                                },
+                                ticks: {
+                                    color: '#94a3b8'
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                document.getElementById('historyExerciseName').textContent = exerciseName;
+            },
+
+            updateTimeHistoryChart() {
+                const canvasCtx = document.getElementById('timeHistoryChart');
+                const timeChartSection = document.getElementById('timeHistoryChartSection');
+                
+                if (!this.selectedExercise) {
+                    timeChartSection.style.display = 'none';
+                    return;
+                }
+                
+                const exercise = this.exercises.find(ex => ex.id === this.selectedExercise);
+                if (!exercise || !exercise.trackTime) {
+                    // Esconder seção completa se exercício não rastreia tempo
+                    timeChartSection.style.display = 'none';
+                    return;
+                }
+                
+                // Mostrar seção se tem trackTime
+                timeChartSection.style.display = 'block';
+                
+                const timeHistory = this.timeHistory[this.selectedExercise] || [];
+                
+                if (timeHistory.length === 0) {
+                    canvasCtx.getContext('2d').clearRect(0, 0, canvasCtx.width, canvasCtx.height);
+                    return;
+                }
+                
+                // Ordenar histórico por BPM
+                const sorted = [...timeHistory].sort((a, b) => a.bpm - b.bpm);
+                
+                // Como agora temos apenas um registro por BPM, não precisa agrupar
+                const labels = sorted.map(h => h.bpm + ' BPM');
+                const data = sorted.map(h => h.seconds); // Usar segundos diretamente
+                
+                // Destruir gráfico anterior se existir
+                if (this.timeChartInstance) {
+                    this.timeChartInstance.destroy();
+                }
+                
+                this.timeChartInstance = new Chart(canvasCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Segundos de prática',
+                            data: data,
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.6)',
+                            borderWidth: 2,
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'x',
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Segundos'
+                                },
+                                grid: {
+                                    color: '#334155'
+                                },
+                                ticks: {
+                                    color: '#94a3b8'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: '#334155'
+                                },
+                                ticks: {
+                                    color: '#94a3b8'
+                                }
+                            }
+                        }
+                    }
+                });
+            },
+
+            updateHistoryList() {
+                const exerciseHistory = this.history[this.selectedExercise] || [];
+                const historyList = document.getElementById('historyList');
+                
+                if (exerciseHistory.length === 0) {
+                    historyList.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 20px;">Nenhum registro salvo ainda</p>';
+                    return;
+                }
+                
+                // Ordenar por timestamp (mais recente primeiro)
+                const sorted = [...exerciseHistory].sort((a, b) => b.timestamp - a.timestamp);
+                
+                historyList.innerHTML = sorted.map((item, idx) => `
+                    <div class="history-item">
+                        <span class="history-date">${item.date}</span>
+                        <span class="history-bpm">${item.bpm} BPM</span>
+                    </div>
+                `).join('');
+            }
+        };
+
+        // Inicializar quando o DOM estiver pronto
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+
+        // Limpar ao sair
+        window.addEventListener('beforeunload', () => {
+            if (app.isPlaying) {
+                app.stopMetronome();
+            }
+        });
+    </script>
+</body>
+</html>
