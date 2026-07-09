@@ -779,6 +779,7 @@
             timerSeconds: 0,
             timerInterval: null,
             timerRunning: false,
+            wakeLock: null,
 
             init() {
                 this.loadBpms();
@@ -1166,6 +1167,15 @@
 
             async startMetronome() {
                 try {
+                    // Ativar Wake Lock para manter a tela ligada
+                    if ('wakeLock' in navigator) {
+                        try {
+                            this.wakeLock = await navigator.wakeLock.request('screen');
+                        } catch (err) {
+                            console.log('Wake Lock não disponível:', err);
+                        }
+                    }
+
                     // Forçar inicialização de áudio no iOS
                     if (Tone.Destination.state === 'suspended') {
                         await Tone.start();
@@ -1246,6 +1256,17 @@
                 document.getElementById('playBtn').classList.remove('playing');
                 // Parar timer quando parar o metrônomo
                 this.resetTimer();
+                
+                // Liberar Wake Lock
+                if (this.wakeLock !== null) {
+                    this.wakeLock.release()
+                        .then(() => {
+                            this.wakeLock = null;
+                        })
+                        .catch((err) => {
+                            console.log('Erro ao liberar Wake Lock:', err);
+                        });
+                }
             },
 
             toggleTimer() {
@@ -1582,6 +1603,19 @@
         // Inicializar quando o DOM estiver pronto
         document.addEventListener('DOMContentLoaded', () => {
             app.init();
+        });
+
+        // Reativar Wake Lock quando app fica visível novamente
+        document.addEventListener('visibilitychange', async () => {
+            if (!document.hidden && app.isPlaying && app.wakeLock === null) {
+                if ('wakeLock' in navigator) {
+                    try {
+                        app.wakeLock = await navigator.wakeLock.request('screen');
+                    } catch (err) {
+                        console.log('Erro ao reativar Wake Lock:', err);
+                    }
+                }
+            }
         });
 
         // Limpar ao sair
