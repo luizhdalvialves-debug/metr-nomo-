@@ -170,6 +170,96 @@
             margin-bottom: 15px;
         }
 
+        .subdivision-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .subdiv-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 10px 4px;
+            background-color: #0f172a;
+            color: #94a3b8;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .subdiv-btn.active {
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            color: #fff;
+            border-color: #3b82f6;
+            box-shadow: 0 2px 8px rgba(96, 165, 250, 0.35);
+        }
+
+        .subdiv-label {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            font-weight: 600;
+        }
+
+        /* Interruptor de subdivisão */
+        .subdiv-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .subdiv-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .subdiv-slider-track {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #475569;
+            border-radius: 24px;
+            transition: background-color 0.2s ease;
+        }
+
+        .subdiv-slider-track::before {
+            content: "";
+            position: absolute;
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            top: 3px;
+            background-color: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s ease;
+        }
+
+        .subdiv-switch input:checked + .subdiv-slider-track {
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+        }
+
+        .subdiv-switch input:checked + .subdiv-slider-track::before {
+            transform: translateX(20px);
+        }
+
+        /* Estado desativado: botões de subdivisão esmaecidos */
+        .subdivision-group.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
         .percent-group {
             display: flex;
             gap: 10px;
@@ -626,6 +716,19 @@
             .control-group {
                 gap: 8px;
             }
+
+            .subdivision-group {
+                gap: 6px;
+            }
+
+            .subdiv-btn {
+                padding: 8px 2px;
+                font-size: 18px;
+            }
+
+            .subdiv-label {
+                font-size: 8px;
+            }
         }
     </style>
 </head>
@@ -711,6 +814,25 @@
                 </div>
             </div>
 
+            <!-- Seletor de Subdivisão -->
+            <div style="margin-bottom: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <label class="label" style="margin: 0;">Subdivisão</label>
+                    <label class="subdiv-switch">
+                        <input type="checkbox" id="subdivToggle" checked onchange="app.toggleSubdivisionSound()">
+                        <span class="subdiv-slider-track"></span>
+                    </label>
+                </div>
+                <div class="subdivision-group" id="subdivisionGroup">
+                    <button class="subdiv-btn active" data-subdiv="1" onclick="app.setSubdivision(1)">♩<span class="subdiv-label">Tempo</span></button>
+                    <button class="subdiv-btn" data-subdiv="2" onclick="app.setSubdivision(2)">♫<span class="subdiv-label">Colcheias</span></button>
+                    <button class="subdiv-btn" data-subdiv="3" onclick="app.setSubdivision(3)">3<span class="subdiv-label">Tercinas</span></button>
+                    <button class="subdiv-btn" data-subdiv="4" onclick="app.setSubdivision(4)">♬<span class="subdiv-label">Semicolch.</span></button>
+                    <button class="subdiv-btn" data-subdiv="6" onclick="app.setSubdivision(6)">6<span class="subdiv-label">Sextinas</span></button>
+                    <button class="subdiv-btn" data-subdiv="8" onclick="app.setSubdivision(8)">8<span class="subdiv-label">Fusas</span></button>
+                </div>
+            </div>
+
             <!-- Controles de BPM Absoluto -->
             <div class="control-group">
                 <button class="btn" onclick="app.updateBpm(-1)">− 1 BPM</button>
@@ -770,6 +892,8 @@
             selectedExercise: null,
             isPlaying: false,
             percentValue: 5,
+            subdivision: 1,
+            subdivisionEnabled: true,
             synth: null,
             beatCount: 0,
             transportStarted: false,
@@ -1192,25 +1316,8 @@
                     Tone.Transport.start();
                     this.transportStarted = true;
 
-                    // Usar loop ao invés de schedule para mais confiabilidade
-                    if (this.transportLoop) {
-                        this.transportLoop.dispose();
-                    }
-                    
-                    let beatIndex = 0;
-                    this.transportLoop = new Tone.Loop((time) => {
-                        const beatPosition = beatIndex % 4;
-                        this.synth.triggerAttackRelease(
-                            beatPosition === 0 ? 1200 : 900,
-                            beatPosition === 0 ? '100ms' : '50ms',
-                            time
-                        );
-                        this.beatCount = beatPosition;
-                        this.updateBeatIndicator();
-                        beatIndex++;
-                    }, '4n'); // Executa a cada quarter note
-                    
-                    this.transportLoop.start(0);
+                    // Criar o loop de áudio (usa this.subdivision atual)
+                    this.restartLoop();
                     
                     console.log('✅ Metrônomo iniciado com BPM:', this.currentBpm);
                 } catch (err) {
@@ -1224,6 +1331,70 @@
                 dots.forEach((dot, idx) => {
                     dot.classList.toggle('active', idx === this.beatCount);
                 });
+            },
+
+            setSubdivision(sub) {
+                this.subdivision = sub;
+                // Atualizar botões ativos
+                document.querySelectorAll('.subdiv-btn').forEach(btn => {
+                    btn.classList.toggle('active', parseInt(btn.dataset.subdiv) === sub);
+                });
+                // Se estiver tocando, recriar apenas o loop (sem parar cronômetro nem wake lock)
+                if (this.isPlaying) {
+                    this.restartLoop();
+                }
+            },
+
+            toggleSubdivisionSound() {
+                this.subdivisionEnabled = document.getElementById('subdivToggle').checked;
+                // Esmaecer os botões de subdivisão quando desativado
+                document.getElementById('subdivisionGroup').classList.toggle('disabled', !this.subdivisionEnabled);
+                // A leitura de subdivisionEnabled no loop já reflete a mudança em tempo real
+            },
+
+            restartLoop() {
+                // Recria apenas o loop de áudio, mantendo transport e cronômetro rodando
+                if (this.transportLoop) {
+                    this.transportLoop.dispose();
+                }
+
+                let tickIndex = 0;
+                const sub = this.subdivision;
+                const intervalMap = { 1: '4n', 2: '8n', 3: '8t', 4: '16n', 6: '16t', 8: '32n' };
+                const loopInterval = intervalMap[sub] || '4n';
+
+                this.transportLoop = new Tone.Loop((time) => {
+                    const positionInBeat = tickIndex % sub;
+                    const beatPosition = Math.floor(tickIndex / sub) % 4;
+
+                    let freq, duration;
+                    if (positionInBeat === 0) {
+                        if (beatPosition === 0) {
+                            freq = 1200;
+                            duration = '100ms';
+                        } else {
+                            freq = 900;
+                            duration = '80ms';
+                        }
+                    } else {
+                        freq = 1600;
+                        duration = '40ms';
+                    }
+
+                    // Tocar som: sempre no início do tempo; nas subdivisões só se ativado
+                    if (positionInBeat === 0 || this.subdivisionEnabled) {
+                        this.synth.triggerAttackRelease(freq, duration, time,
+                            positionInBeat === 0 ? 1 : 0.5);
+                    }
+
+                    if (positionInBeat === 0) {
+                        this.beatCount = beatPosition;
+                        this.updateBeatIndicator();
+                    }
+                    tickIndex++;
+                }, loopInterval);
+
+                this.transportLoop.start(0);
             },
 
             async togglePlay() {
